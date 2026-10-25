@@ -77,7 +77,10 @@ def base_opts() -> dict:
     opts = {
         "quiet": True, "no_warnings": True, "noplaylist": True,
         # alternative clients are less often bot-checked on cloud IPs
-        "extractor_args": {"youtube": {"player_client": ["tv", "web_safari", "mweb", "default"]}},
+        "extractor_args": {"youtube": {"player_client": ["default", "mweb"]}},
+        # Node.js solves YouTube's JS challenges; PO tokens come from the bgutil server
+        "js_runtimes": {"node": {}},
+        "socket_timeout": 20,
     }
     if PROXY:
         opts["proxy"] = PROXY
@@ -176,6 +179,19 @@ def run_download(job_id: str, req: DownloadReq):
 def health():
     return {"ok": True, "ffmpeg": bool(shutil.which("ffmpeg")),
             "yt_dlp": yt_dlp.version.__version__}
+
+
+@app.get("/api/check")
+def check(url: str = "https://www.youtube.com/watch?v=jNQXAC9IVRw"):
+    """Quick diagnostic: can this server read YouTube right now?"""
+    url = validate_url(url)
+    try:
+        with yt_dlp.YoutubeDL(base_opts() | {"skip_download": True}) as ydl:
+            data = ydl.extract_info(url, download=False)
+        return {"ok": True, "title": data.get("title"),
+                "formats": len(data.get("formats", []))}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)[:400]}
 
 
 @app.post("/api/info")
