@@ -25,6 +25,20 @@ FILE_TTL_SECONDS = int(os.getenv("FILE_TTL_SECONDS", "1800"))     # delete files
 MAX_DURATION_SECONDS = int(os.getenv("MAX_DURATION_SECONDS", "7200"))  # 2h cap
 RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "10"))
 COOKIES_FILE = os.getenv("YTDLP_COOKIES")  # optional path to cookies.txt
+PROXY = os.getenv("YTDLP_PROXY")            # optional http(s)/socks proxy URL
+
+# Cookies can also be pasted into an env var (raw Netscape cookies.txt text
+# or base64 of it). Written to a writable temp file because yt-dlp updates it.
+_cookie_text = os.getenv("YTDLP_COOKIES_CONTENT", "").strip()
+if _cookie_text:
+    import base64
+    if not _cookie_text.startswith("#") and "\t" not in _cookie_text:
+        try:
+            _cookie_text = base64.b64decode(_cookie_text).decode()
+        except Exception:  # noqa: BLE001
+            pass
+    COOKIES_FILE = "/tmp/yt_cookies.txt"
+    Path(COOKIES_FILE).write_text(_cookie_text.replace("\\n", "\n") + "\n")
 
 ALLOWED_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com",
                  "music.youtube.com", "youtu.be"}
@@ -60,7 +74,13 @@ def rate_limit(request: Request):
 
 
 def base_opts() -> dict:
-    opts = {"quiet": True, "no_warnings": True, "noplaylist": True}
+    opts = {
+        "quiet": True, "no_warnings": True, "noplaylist": True,
+        # alternative clients are less often bot-checked on cloud IPs
+        "extractor_args": {"youtube": {"player_client": ["tv", "web_safari", "mweb", "default"]}},
+    }
+    if PROXY:
+        opts["proxy"] = PROXY
     if COOKIES_FILE and Path(COOKIES_FILE).exists():
         opts["cookiefile"] = COOKIES_FILE
     return opts
