@@ -1,0 +1,13 @@
+services:
+  ytgrab:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      FILE_TTL_SECONDS: 1800
+      MAX_DURATION_SECONDS: 7200
+      RATE_LIMIT_PER_MIN: 10
+      # YTDLP_COOKIES: /app/cookies.txt   # optional, helps if YouTube blocks the server IP
+    volumes:
+      - ./downloads:/app/downloads
+    restart: unless-stopped

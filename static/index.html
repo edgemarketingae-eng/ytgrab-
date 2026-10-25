@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YTGrab — YouTube to MP3 &amp; MP4</title>
+<meta name="description" content="Convert YouTube videos to MP3 audio or MP4 video.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d12;--card:#141821;--line:#232a36;--text:#e9edf3;--muted:#8b95a7;--accent:#ff3b4e;--accent2:#ff7a45;--ok:#22c55e}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(1200px 600px at 50% -10%,#2a0f17 0%,var(--bg) 60%);color:var(--text);min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:48px 16px 64px}
+header{text-align:center;margin-bottom:32px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
+.logo i{width:34px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center}
+.logo i:after{content:"";border-left:9px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px}
+h1{font-size:clamp(28px,6vw,44px);line-height:1.1;margin:20px 0 10px;letter-spacing:-.02em}
+h1 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.row{display:flex;gap:10px}
+input{flex:1;min-width:0;background:#0e1118;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:14px 16px;font-size:16px;outline:none}
+input:focus{border-color:var(--accent)}
+button{border:0;border-radius:12px;padding:14px 20px;font-weight:600;font-size:15px;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));white-space:nowrap}
+button:disabled{opacity:.5;cursor:not-allowed}
+.ghost{background:#1c2230;border:1px solid var(--line)}
+.video{display:none;gap:16px;margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
+.video img{width:200px;aspect-ratio:16/9;object-fit:cover;border-radius:10px;flex-shrink:0}
+.meta h3{margin:0 0 6px;font-size:16px;line-height:1.35}
+.meta p{margin:0;color:var(--muted);font-size:13px}
+.tabs{display:flex;background:#0e1118;border:1px solid var(--line);border-radius:12px;padding:4px;margin:18px 0 12px}
+.tabs button{flex:1;background:transparent;padding:10px}
+.tabs button.on{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chips button{background:#1c2230;border:1px solid var(--line);padding:9px 14px;font-weight:500}
+.chips button.on{border-color:var(--accent);color:var(--accent);background:#2a1419}
+.bar{height:8px;background:#0e1118;border-radius:99px;overflow:hidden;margin-top:14px;display:none}
+.bar div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+.err{color:#ff6b7a}
+.dl{display:none;margin-top:14px;background:var(--ok);text-decoration:none;color:#fff;text-align:center;border-radius:12px;padding:14px;font-weight:600}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;font-size:13px;color:var(--muted)}
+.feat b{display:block;color:var(--text);margin-bottom:4px;font-size:14px}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:32px;line-height:1.6}
+footer a{color:var(--muted)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media(max-width:600px){.row{flex-direction:column}.video{flex-direction:column}.video img{width:100%}.feats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><i></i>YTGrab</div>
+    <h1>YouTube to <span>MP3 &amp; MP4</span></h1>
+    <p class="sub">Paste a link, pick a format, download. No sign-up.</p>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+      <button id="fetch">Get video</button>
+    </div>
+    <div class="status" id="s1"></div>
+
+    <div class="video" id="video">
+      <img id="thumb" alt="">
+      <div class="meta" style="flex:1;min-width:0">
+        <h3 id="title"></h3>
+        <p id="info"></p>
+        <div class="tabs">
+          <button data-f="mp4" class="on">MP4 Video</button>
+          <button data-f="mp3">MP3 Audio</button>
+        </div>
+        <div class="chips" id="chips"></div>
+        <button id="go" style="width:100%">Convert &amp; download</button>
+        <div class="bar" id="bar"><div></div></div>
+        <div class="status" id="s2"></div>
+        <a class="dl" id="dl" href="#">⬇ Save file</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="feats">
+    <div class="feat"><b>Up to 1080p</b>MP4 with merged audio</div>
+    <div class="feat"><b>320 kbps MP3</b>With cover art &amp; tags</div>
+    <div class="feat"><b>Auto-cleanup</b>Files deleted after 30 min</div>
+  </div>
+
+  <footer>
+    Only download videos you own or have permission to save (e.g. Creative Commons).<br>
+    Respect YouTube's Terms of Service and creators' copyright.<br>
+    <a href="https://github.com/edgemarketingae-eng/ytgrab-" id="gh" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let meta = null, fmt = "mp4", quality = "720";
+
+function fmtTime(s){ if(!s) return ""; const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+  return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0"); }
+function fmtNum(n){ return n ? Intl.NumberFormat("en",{notation:"compact"}).format(n)+" views" : ""; }
+
+async function api(path, body){
+  const r = await fetch(path,{method:body?"POST":"GET",headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const j = await r.json().catch(()=>({error:"Server error"}));
+  if(!r.ok) throw new Error(j.error || "Request failed");
+  return j;
+}
+
+function renderChips(){
+  const list = fmt==="mp4" ? meta.mp4_qualities.map(q=>[q,q+"p"]) : meta.mp3_bitrates.map(b=>[b,b+" kbps"]);
+  if(!list.find(([v])=>v===quality)) quality = list[0][0];
+  $("chips").innerHTML = list.map(([v,l])=>`<button data-q="${v}" class="${v===quality?"on":""}">${l}</button>`).join("");
+}
+
+$("chips").onclick = e => { const q=e.target.dataset.q; if(q){ quality=q; renderChips(); } };
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); fmt=b.dataset.f; quality = fmt==="mp4"?"720":"320"; renderChips(); resetDl();
+});
+
+function resetDl(){ $("dl").style.display="none"; $("bar").style.display="none"; $("s2").textContent=""; $("go").disabled=false; }
+
+$("fetch").onclick = async () => {
+  const url = $("url").value.trim(); if(!url) return;
+  $("fetch").disabled = true; $("s1").innerHTML = '<span class="spin"></span> Reading video…'; $("s1").className="status";
+  try{
+    meta = await api("/api/info",{url});
+    $("thumb").src = meta.thumbnail || ""; $("title").textContent = meta.title;
+    $("info").textContent = [meta.channel, fmtTime(meta.duration), fmtNum(meta.views)].filter(Boolean).join(" · ");
+    $("video").style.display = "flex"; $("s1").textContent = ""; renderChips(); resetDl();
+  }catch(e){ $("s1").textContent = e.message; $("s1").className="status err"; }
+  $("fetch").disabled = false;
+};
+$("url").addEventListener("keydown", e => { if(e.key==="Enter") $("fetch").click(); });
+
+$("go").onclick = async () => {
+  resetDl(); $("go").disabled = true; $("bar").style.display="block"; $("bar").firstElementChild.style.width="0";
+  $("s2").innerHTML = '<span class="spin"></span> Starting…'; $("s2").className="status";
+  try{
+    const { job_id } = await api("/api/download",{url:$("url").value.trim(),format:fmt,quality});
+    const labels = {queued:"Queued…",downloading:"Downloading",processing:"Converting with FFmpeg…"};
+    while(true){
+      await new Promise(r=>setTimeout(r,1000));
+      const p = await api("/api/progress/"+job_id);
+      $("bar").firstElementChild.style.width = (p.progress||0)+"%";
+      if(p.status==="done"){
+        $("s2").textContent = "Ready: "+p.filename;
+        $("dl").href = "/api/file/"+job_id; $("dl").style.display="block"; $("go").disabled=false;
+        window.location.href = "/api/file/"+job_id; break;
+      }
+      if(p.status==="error") throw new Error(p.error || "Download failed");
+      $("s2").innerHTML = '<span class="spin"></span> '+(labels[p.status]||p.status)+(p.status==="downloading"?" "+Math.round(p.progress/0.9)+"%":"");
+    }
+  }catch(e){ $("s2").textContent = e.message; $("s2").className="status err"; $("go").disabled=false; }
+};
+</script>
+</body>
+</html>
